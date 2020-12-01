@@ -1,3 +1,4 @@
+import sqlGAP
 
 type
   Worker* = object
@@ -6,33 +7,32 @@ type
     tasks:seq[int]
 
   Matrix*[n:static[int],m:static[int]]= ref object
-    dim*:tuple(N:int,M:int)
-    costs:*array[1..n,array[1..m,tuple(capacity:int,cost:int)]]
+    dim* : tuple[N:int,M:int]
+    costs* :array[1..n,array[1..m,tuple[capacity:int,cost:int]]]
 
-
-proc initWorker(id,capacity:int,tasks:seq[int]=nil):Worker=
+proc initWorker*(id,capacity:int,tasks:seq[int]= @[]):Worker=
   var
     w:Worker
   w.id=id
-  w.capacity
+  w.capacity=capacity
 
-  if not isNil(tasks) :
+  if len(tasks) == 0 :
     w.tasks=tasks
 
   return w
 
-proc initMatrix(n,m:int,db:string):Matrix=
+proc initMatrix*(n,m:int,db:string):Matrix=
   var
     matrix:Matrix[n,m]
     costs=getCosts(db)
     capacities=getCapacities(db)
     k:int=0
 
-  m.dim=(n,m)
+  matrix.dim=(n,m)
 
   for i in countup(1,n):
     for j in countup(1,m):
-      matrix[i][j]=(costs[((i-1)*m)+j],capacities[((i-1)*m)+j])
+      matrix[i][j]=(costs[((i-1)*m)+j][0],capacities[((i-1)*m)+j][0])
 
   return matrix
 
