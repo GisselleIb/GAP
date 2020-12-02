@@ -1,40 +1,49 @@
 import sqlGAP
+import strutils
 
 type
   Worker* = object
     id:int
-    capacity*:int
+    totalCapacity*:float
+    capacity*:float
     tasks:seq[int]
 
-  Matrix*[n:static[int],m:static[int]]= ref object
+  Matrix*[n,m:static[int]]=object
     dim* : tuple[N:int,M:int]
-    costs* :array[1..n,array[1..m,tuple[capacity:int,cost:int]]]
+    costs* :ref array[1..n,array[1..m,tuple[capacity:float,cost:float]]]
 
-proc initWorker*(id,capacity:int,tasks:seq[int]= @[]):Worker=
+proc initWorker*(id:int,capacity:float,tasks:seq[int]= @[]):Worker=
   var
     w:Worker
   w.id=id
-  w.capacity=capacity
+  w.totalCapacity=capacity
 
   if len(tasks) == 0 :
     w.tasks=tasks
 
   return w
 
-proc initMatrix*(n,m:int,db:string):Matrix=
+proc initMatrix*(matrix:Matrix,n,m:int,db:string):Matrix=
   var
-    matrix:Matrix[n,m]
+    matrix=matrix
     costs=getCosts(db)
     capacities=getCapacities(db)
-    k:int=0
 
+  new(matrix.costs)
   matrix.dim=(n,m)
 
   for i in countup(1,n):
     for j in countup(1,m):
-      matrix[i][j]=(costs[((i-1)*m)+j][0],capacities[((i-1)*m)+j][0])
+      var
+        capacity=parseFloat(capacities[((i-1)*m)+j-1][0])
+        cost=parseFloat(costs[((i-1)*m)+j-1][0])
+      matrix.costs[i][j]=(capacity,cost)
 
   return matrix
+
+proc addTask(w:var Worker,m:Matrix,task:int)=
+  w.tasks.add(task)
+  w.capacity=w.capacity+m.costs[task][w.id].capacity
 
 proc capacityLeft(w:Worker,m:Matrix):int=
   var
