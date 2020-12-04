@@ -11,3 +11,9 @@ proc getCapacities*(db:string):seq[seq[string]]=
   result=bd.getAllRows(sql"SELECT capacidad FROM capacidades" )
   bd.close()
   return result
+
+proc getWorkers*(db:string):seq[seq[string]]=
+  let db=open(db,"","","")
+  result=db.getAllRows(sql"SELECT id,capacidad FROM trabajadores")
+  db.close()
+  return result
