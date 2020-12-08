@@ -1,35 +1,42 @@
 import random
 import worker
 import sequtils
+import tables
 
 type
   Solution* =object
-    workers*:seq[Worker]
+    workers*: Table[int,Worker]
+    numWorkers:int
     tasksLeft*:seq[int]
     cost*:float
 
-proc addTaskToWorker(s:var Solution,m:Matrix)=
+proc addTaskToWorker*(s:var Solution,m:Matrix)=
   var
-    id:int=rand(len(s.workers)-1)
+    id:int=rand(1..len(s.workers))
     t:int=sample(s.tasksLeft) #posible optimizacion
+    cost:float
     i:int
 
-  s.cost=s.cost-s.workers[id].capacity
+  cost=m.costs[t][id].cost
   s.workers[id].addTask(m,t)
-  s.cost=s.cost-s.workers[id].capacity
-#  echo s.workers[id], " ", t
+  if s.workers[id].excessCapacity():
+    s.cost=s.cost+1000*(cost)
+  else:
+    s.cost=s.cost+cost
+
   i=s.tasksLeft.find(t)
   s.tasksLeft.delete(i)
 
-proc initSolution*(workers:seq[Worker],tasks:seq[int],m:Matrix,random:bool=true):Solution=
+
+proc initSolution*(workers:Table[int,Worker],size:int,tasks:seq[int],m:Matrix,random:bool=true):Solution=
   var
     s:Solution
-    w:Worker
 
   s.workers=workers
+  s.numWorkers=size
   s.tasksLeft= tasks
   s.cost=0
-  
+
   if  random:
     while s.tasksLeft != @[]:
       s.addTaskToWorker(m)

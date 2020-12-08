@@ -1,5 +1,6 @@
 import sqlGAP
 import strutils
+import tables
 
 type
   Worker* = object
@@ -25,36 +26,37 @@ proc initWorker*(id:int,capacity:float,tasks:seq[int]= @[]):Worker=
   return w
 
 
-proc groupWorkers*(db:string,tasks:seq[int]):seq[Worker]=
+proc groupWorkers*(db:string,tasks:seq[int]):Table[int,Worker]=
   var
-    workers:seq[Worker]
+    workers:Table[int,Worker]
     worksCaps:seq[seq[string]]
+    id:int
 
   worksCaps=getWorkers(db)
   for wc in worksCaps:
-    workers.add(initWorker(parseInt(wc[0]),parseFloat(wc[1])))
+    id=parseInt(wc[0])
+    workers[id]=initWorker(id,parseFloat(wc[1]))
 
   return workers
 
 
-proc initMatrix*(matrix:Matrix,n,m:int,db:string):Matrix=
+proc initMatrix*(matrix:var Matrix,n,m:int,db:string)=
   var
-    matrix=matrix
     costs=getCosts(db)
     capacities=getCapacities(db)
+    k:int
 
   new(matrix)
   matrix.dim=(n,m)
 
   for i in countup(1,n):
-    var k=((i-1)*m)
+    k=((i-1)*m)
     for j in countup(1,m):
       var
         capacity=parseFloat(capacities[k+j-1][0])
         cost=parseFloat(costs[k+j-1][0])
       matrix.costs[i][j]=(capacity,cost)
 
-  return matrix
 
 
 proc addTask*(w:var Worker,m:Matrix,task:int)=
@@ -62,12 +64,5 @@ proc addTask*(w:var Worker,m:Matrix,task:int)=
   w.capacity=w.capacity+m.costs[task][w.id].capacity
 
 
-proc capacityLeft(w:Worker,m:Matrix):int=
-  var
-    w=w
-    cl:int=0
-
-  for t in w.tasks:
-      cl=cl+m[t][w.id]
-
-  return cl
+proc excessCapacity*(w:Worker):bool=
+  return w.capacity < w.totalCapacity
