@@ -4,10 +4,10 @@ import tables
 
 type
   Worker* = object
-    id:int
     totalCapacity*:float
     capacity*:float
-    tasks:seq[int]
+    tasks*:seq[int]
+    numTasks*:int
 
   Matrix*[n,m:static[int]]=ref object
     dim* : tuple[N:int,M:int]
@@ -15,13 +15,13 @@ type
 
 
 
-proc initWorker*(id:int,capacity:float,tasks:seq[int]= @[]):Worker=
+proc initWorker*(capacity:float,tasks:seq[int]= @[]):Worker=
   var
     w:Worker
 
-  w.id=id
   w.totalCapacity=capacity
   w.tasks=tasks
+  w.numTasks=0
 
   return w
 
@@ -35,7 +35,7 @@ proc groupWorkers*(db:string,tasks:seq[int]):Table[int,Worker]=
   worksCaps=getWorkers(db)
   for wc in worksCaps:
     id=parseInt(wc[0])
-    workers[id]=initWorker(id,parseFloat(wc[1]))
+    workers[id]=initWorker(parseFloat(wc[1]))
 
   return workers
 
@@ -59,10 +59,23 @@ proc initMatrix*(matrix:var Matrix,n,m:int,db:string)=
 
 
 
-proc addTask*(w:var Worker,m:Matrix,task:int)=
+proc addTask*(w:var Worker,capacity:float,task:int)=
   w.tasks.add(task)
-  w.capacity=w.capacity+m.costs[task][w.id].capacity
+  w.capacity=w.capacity+capacity
+  #echo "Nuevas cap: ",w.capacity, " ", w.totalCapacity
+  w.numTasks=w.numTasks+1
+
+
+proc deleteTask*(w:var Worker,capacity:float,id:int)=
+  w.tasks.delete(id)
+  w.capacity=w.capacity-capacity
+  w.numTasks=w.numTasks-1
 
 
 proc excessCapacity*(w:Worker):bool=
-  return w.capacity < w.totalCapacity
+  return w.capacity > w.totalCapacity
+
+proc resetWorker*(w:var Worker)=
+    w.capacity=0
+    w.tasks= @[]
+    w.numTasks=0

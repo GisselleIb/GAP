@@ -1,16 +1,20 @@
 import beeColony
 import worker
 import random
+import tables
 
 when isMainModule:
 
   var
     colony:BeeColony[800]
-    matrix:Matrix[1000,500]
+    matrix:Matrix[200,75]
 
-  randomize(8)
-  matrix.initMatrix(1000,500,"src/gap.db")
+  randomize()#100
+  matrix.initMatrix(200,75,"db/gap2.db")
   new(colony)
-  colony.initColony(1000,matrix)
-  colony.beeColonyOpt(matrix,1000)
-  echo colony.bestSolution
+  colony.initColony(800,75,200,10,matrix)
+  colony.beeColonyOpt(matrix)
+  echo colony.bestSolution.cost
+
+  for w in pairs(colony.bestSolution.workers):
+    echo w
