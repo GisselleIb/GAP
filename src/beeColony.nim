@@ -7,81 +7,104 @@ import tables
 
 type
   BeeColony*[size:static[int]] = ref object
-    bees*:array[size,Bee]
-    bestSolution*:Solution
+    numBees*:int
+    numWorkers:int
+    numTasks:int
     iterations*:int
+    bees*:array[size,Bee]
+    min,max:float
+    bestSolution*:Solution
 
-proc initColony*(colony:var BeeColony,iterations:int,m:Matrix)=
+proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:Matrix)=
   var
     workers:Table[int,Worker]
     tasks:seq[int]
 
-  tasks=toSeq(1..1000)
-  workers=groupWorkers("src/gap.db",tasks)
   colony.iterations=iterations
-  colony.bestSolution=initSolution(workers,tasks,m)
+  colony.numBees=size
+  colony.numWorkers=numWorkers
+  colony.numTasks=numTasks
+  colony.min=high(BiggestFloat)
+  colony.max=0.0
 
-  for i in countup(0,len(colony.bees)-1):
-    colony.bees[i]=initBee(workers,tasks,m)
+  tasks=toSeq(1..numTasks)
+  workers=groupWorkers("db/gap2.db",tasks)
+  colony.bestSolution=initSolution(workers,numWorkers,tasks,m)
 
+  for i in countup(0,size-1):
+    colony.bees[i]=initBee(workers,tasks,numWorkers,m)
 
-proc totalCost(colony:BeeColony):float=
+proc resetBees*(c:BeeColony)=
   var
-    total:float
-  for b in colony.bees:
-    total=total+b.solution.cost
+    tasks:seq[int]=toSeq(1..c.numTasks)
 
-  return total
+  for i in countup(0,c.numBees-1):
+    c.bees[i].solution.resetSolution(tasks)
 
-proc getBestSolution(colony:BeeColony):Solution=
+
+proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el método principal
   var
     best:Solution
 
   best.cost=high(BiggestFloat)
 
   for b in colony.bees:
+    #echo "Solución abeja:", b.solution.cost
     if b.solution.cost < best.cost:
       best=b.solution
 
   return best
 
 
-proc forwardPass(colony: var BeeColony,m:Matrix)=
-  for i in countup(0,len(colony.bees)-1):
+proc forwardPass(colony: var BeeColony,m:Matrix,j:float)=
+  colony.min=high(BiggestFloat)
+  colony.max=0.0
+  for i in countup(0,colony.numBees-1):
     colony.bees[i].solution.addTaskToWorker(m)
+    #colony.bees[i].solution.swapTask(m)
+
+    if colony.bees[i].solution.cost < colony.min:
+      colony.min = colony.bees[i].solution.cost
+
+    if colony.bees[i].solution.cost > colony.max:
+      colony.max=colony.bees[i].solution.cost
+
+    #if int(j) == colony.numTasks and colony.bees[i].solution.cost < colony.bestSolution.cost:
+    #  colony.bestSolution=colony.bees[i].solution
 
 
-proc backwardPass(c: var BeeColony,m:Matrix)=
+proc backwardPass(c: var BeeColony)=
   var
-    dancers:seq[Bee]
-    followers:seq[Bee]
-    total:float=c.totalCost()
-    dn:Bee
+    dancers:seq[int]
+    followers:seq[int]
+    id:int
 
-  for i in countup(0,len(c.bees)-1):
-    c.bees[i].changeStatus(total)
+  for i in countup(0,c.numBees-1):
+    c.bees[i].changeStatus(c.min,c.max)
     if c.bees[i].status == dancer:
-      dancers.add(c.bees[i])
+      dancers.add(i)
     elif c.bees[i].status == follower:
-      followers.add(c.bees[i])
+      followers.add(i)
+  #echo len(dancers), " ", len(followers)
+  for j in followers:
+    id=sample(dancers)
+    #echo c.bees[id].solution.cost
+    c.bees[j].solution=c.bees[id].solution
 
-  for j in countup(0,len(followers)-1):
-    dn=sample(dancers)
-    followers[j].solution=dn.solution #se cambia la solución, las abejas siguen a la que baila
 
-
-proc beeColonyOpt*(colony:var BeeColony,m:Matrix,numTasks:int)=
+proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
   var
     best:Solution
+    min,max:float
 
-  for i in countup(0,colony.iterations):
-    for j in countup(1,numTasks):
-      colony.forwardPass(m)
-      echo j
-      colony.backwardPass(m)
-      echo j
+  for i in countup(1,colony.iterations):
+    for j in countup(1,colony.numTasks):
+      colony.forwardPass(m,float(j))
+      colony.backwardPass()
 
     best=colony.getBestSolution()
     if best.cost < colony.bestSolution.cost:
       colony.bestSolution=best
-    echo best
+
+    echo "Mejor solucion:",colony.bestSolution.cost
+    colony.resetBees()
