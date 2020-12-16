@@ -21,7 +21,7 @@ proc addTaskToWorker*(s:var Solution,m:Matrix)=
   #echo "costo anterior: ", s.cost, " ",capCost.cost
   #echo t
   if s.workers[id].excessCapacity():
-    s.cost=s.cost+(100*capCost.cost)
+    s.cost=s.cost+(1000*capCost.cost)
   else:
     s.cost=s.cost+capCost.cost
 

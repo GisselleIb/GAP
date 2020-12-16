@@ -1,4 +1,3 @@
-import random
 import solution
 import tables
 import worker
@@ -28,17 +27,15 @@ proc loyalty(b:Bee,min,max:float):float=
 
 proc changeStatus*(b:var Bee,min,max:float)=
   var
-    p1:float=rand(1.0)
-    p2:float=rand(1.0)
     loyalty:float=b.loyalty(min,max)
   #echo "Costo sol: ",b.solution.cost
   #echo "Min max: ",min, " ", max
   #echo "Loyalty: ", loyalty
   #echo p1, " ", p2
 
-  if p1 < loyalty:
+  if loyalty > 0.2:
     b.status=follower
-  elif p2 < loyalty:
+  elif loyalty > 0.05 :
     b.status=loner
   else:
     b.status=dancer

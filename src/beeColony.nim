@@ -15,6 +15,7 @@ type
     min,max:float
     bestSolution*:Solution
 
+
 proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:Matrix)=
   var
     workers:Table[int,Worker]
@@ -34,6 +35,7 @@ proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:
   for i in countup(0,size-1):
     colony.bees[i]=initBee(workers,tasks,numWorkers,m)
 
+
 proc resetBees*(c:BeeColony)=
   var
     tasks:seq[int]=toSeq(1..c.numTasks)
@@ -49,20 +51,17 @@ proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el méto
   best.cost=high(BiggestFloat)
 
   for b in colony.bees:
-    #echo "Solución abeja:", b.solution.cost
     if b.solution.cost < best.cost:
       best=b.solution
 
   return best
 
 
-proc forwardPass(colony: var BeeColony,m:Matrix,j:int)=
+proc forwardPass(colony: var BeeColony,m:Matrix)=
   colony.min=high(BiggestFloat)
   colony.max=0.0
   for i in countup(0,colony.numBees-1):
     colony.bees[i].solution.addTaskToWorker(m)
-    #if j > 3:
-    #colony.bees[i].solution.swapTask(m)
 
     if colony.bees[i].solution.cost < colony.min:
       colony.min = colony.bees[i].solution.cost
@@ -70,8 +69,6 @@ proc forwardPass(colony: var BeeColony,m:Matrix,j:int)=
     if colony.bees[i].solution.cost > colony.max:
       colony.max=colony.bees[i].solution.cost
 
-    #if int(j) == colony.numTasks and colony.bees[i].solution.cost < colony.bestSolution.cost:
-    #  colony.bestSolution=colony.bees[i].solution
 
 
 proc backwardPass(c: var BeeColony)=
@@ -86,12 +83,22 @@ proc backwardPass(c: var BeeColony)=
       dancers.add(i)
     elif c.bees[i].status == follower:
       followers.add(i)
-  #echo len(dancers), " ", len(followers)
+
   for j in followers:
     id=sample(dancers)
-    #echo "Follower: ",c.bees[j].solution.cost
-    #echo "Dancer: ",c.bees[id].solution.cost
     c.bees[j].solution=c.bees[id].solution
+
+
+proc factible*(s:Solution):bool=
+  for w in values(s.workers):
+    if w.excessCapacity():
+      return false
+
+  return true
+
+proc resetColony*(colony:var BeeColony,m:Matrix)=
+  var sol=colony.bestSolution
+  colony.bestSolution=initSolution(sol.workers,sol.numWorkers,sol.tasksLeft,m)
 
 
 proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
@@ -101,12 +108,14 @@ proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
 
   for i in countup(1,colony.iterations):
     for j in countup(1,colony.numTasks):
-      colony.forwardPass(m,j)
+      colony.forwardPass(m)
       colony.backwardPass()
 
     best=colony.getBestSolution()
     if best.cost < colony.bestSolution.cost:
       colony.bestSolution=best
 
-    echo "Mejor solucion:",colony.bestSolution.cost
+    #echo "Mejor solucion:",colony.bestSolution.cost
     colony.resetBees()
+
+  #echo colony.bestSolution.factible()
