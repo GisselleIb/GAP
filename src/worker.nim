@@ -69,6 +69,7 @@ proc addTask*(w:var Worker,capacity:float,task:int)=
 proc deleteTask*(w:var Worker,capacity:float,id:int)=
   w.tasks.delete(id)
   w.capacity=w.capacity-capacity
+  #echo "Nuevas cap: ",w.capacity, " ", capacity
   w.numTasks=w.numTasks-1
 
 

@@ -56,11 +56,12 @@ proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el méto
   return best
 
 
-proc forwardPass(colony: var BeeColony,m:Matrix,j:float)=
+proc forwardPass(colony: var BeeColony,m:Matrix,j:int)=
   colony.min=high(BiggestFloat)
   colony.max=0.0
   for i in countup(0,colony.numBees-1):
     colony.bees[i].solution.addTaskToWorker(m)
+    #if j > 3:
     #colony.bees[i].solution.swapTask(m)
 
     if colony.bees[i].solution.cost < colony.min:
@@ -88,7 +89,8 @@ proc backwardPass(c: var BeeColony)=
   #echo len(dancers), " ", len(followers)
   for j in followers:
     id=sample(dancers)
-    #echo c.bees[id].solution.cost
+    #echo "Follower: ",c.bees[j].solution.cost
+    #echo "Dancer: ",c.bees[id].solution.cost
     c.bees[j].solution=c.bees[id].solution
 
 
@@ -99,7 +101,7 @@ proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
 
   for i in countup(1,colony.iterations):
     for j in countup(1,colony.numTasks):
-      colony.forwardPass(m,float(j))
+      colony.forwardPass(m,j)
       colony.backwardPass()
 
     best=colony.getBestSolution()

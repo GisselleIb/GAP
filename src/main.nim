@@ -6,13 +6,13 @@ import tables
 when isMainModule:
 
   var
-    colony:BeeColony[800]
+    colony:BeeColony[10]
     matrix:Matrix[200,75]
 
-  randomize()#100
+  randomize(9)#100
   matrix.initMatrix(200,75,"db/gap2.db")
   new(colony)
-  colony.initColony(800,75,200,10,matrix)
+  colony.initColony(100,75,200,50,matrix)
   colony.beeColonyOpt(matrix)
   echo colony.bestSolution.cost
 

@@ -19,8 +19,9 @@ proc addTaskToWorker*(s:var Solution,m:Matrix)=
   #echo "Before:"
   s.workers[id].addTask(capCost.capacity,t)
   #echo "costo anterior: ", s.cost, " ",capCost.cost
+  #echo t
   if s.workers[id].excessCapacity():
-    s.cost=s.cost+(200*capCost.cost)
+    s.cost=s.cost+(100*capCost.cost)
   else:
     s.cost=s.cost+capCost.cost
 
@@ -52,27 +53,13 @@ proc resetSolution*(s:var Solution,tasks:seq[int])=
     s.workers[i].resetWorker()
 
 
-
 proc swapTask*(s:var Solution,m:Matrix)=
   var
     w1,w2:int=0
-    l:seq[int]
     i,j,t:int
     cap:float=0.0
     capCost:tuple[capacity:float,cost:float]
 
-  #j=0
-  #for k in 1..s.numWorkers:
-  #  if s.workers[k].tasks == @[]:
-  #    l.add(k)
-  #    j=j+1
-
-  #if rand(1.0) < 0.6 and j > 0:
-  #  while w1 == w2 or s.workers[w1].tasks == @[]:
-  #    w1=rand(1..s.numWorkers)
-  #    w2=sample(l)
-
-  #else:
   while w1 == w2 or s.workers[w1].tasks == @[]: #checar que w1 tenga tasks mejora el código esto está bien feo
     w1=rand(1..s.numWorkers)
     w2=rand(1..s.numWorkers)
@@ -87,13 +74,13 @@ proc swapTask*(s:var Solution,m:Matrix)=
     j=0
     for task in s.workers[w1].tasks:
       cap=cap+m.costs[task][w1].capacity
-      echo cap
+      #echo cap
       j=j+1
       if j == i:
         break
 
     if cap > s.workers[w1].totalCapacity:
-      s.cost=s.cost-(200*capCost.cost)
+      s.cost=s.cost-(100*capCost.cost)
     else:
       s.cost=s.cost-capCost.cost
   else:
@@ -105,6 +92,6 @@ proc swapTask*(s:var Solution,m:Matrix)=
   s.workers[w2].addTask(capCost.capacity,t)
   #echo s.workers[w1].tasks, s.workers[w1].numTasks
   if s.workers[w2].excessCapacity():
-    s.cost=s.cost+(200*capCost.cost)
+    s.cost=s.cost+(100*capCost.cost)
   else:
     s.cost=s.cost+capCost.cost
