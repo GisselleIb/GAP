@@ -1,3 +1,7 @@
+import os
+import strutils
+import sequtils
+import algorithm
 import beeColony
 import worker
 import random
@@ -5,25 +9,38 @@ import tables
 ## Main module, constructs the matrix and the Bee Colony and then runs the
 ## heuristic with the given database, seeds, and iterations.
 when isMainModule:
-
   var
-    colony:BeeColony[200]
-    matrix:Matrix[200,75]
+    params:seq[string]=commandLineParams()
+    costs:seq[tuple[cost:float,id:int]]
+    sds:seq[string]
     seeds:seq[int]
 
-  randomize()#100
-  matrix.initMatrix(200,75,"db/gap2.db")
-  colony.initColony(200,75,200,50,matrix)
-  for i in countup(1,200):
-    randomize(i)
-    colony.beeColonyOpt(matrix)
-    echo "Best Solution: ",colony.bestSolution.cost
-    if colony.bestSolution.feasible():
-      seeds.add(i)
-    colony.initColony(200,75,200,50,matrix)
+  sds=split(strip(params[1],chars={'[',']',' '}),',')
+  seeds=map(sds,parseInt)
 
-  echo seeds
-
-
-  #for w in pairs(colony.bestSolution.workers):
-  #  echo w
+  if params[0] == "db/gap3.db":
+    var
+      colony:BeeColony[60]
+      matrix:Matrix[50,20]
+    matrix.initMatrix(50,20,params[0])
+    colony.initColony(60,20,50,20,params[0],matrix)
+    for i in seeds:
+      randomize(i)
+      colony.beeColonyOpt(matrix)
+      echo "Best Solution: ",colony.bestSolution.cost
+      for w in pairs(colony.bestSolution.workers):
+        echo w
+      colony.resetColony(matrix)
+  elif params[0] == "db/gap4.db":
+    var
+      colony:BeeColony[100]
+      matrix:Matrix[100,40]
+    matrix.initMatrix(100,40,params[0])
+    colony.initColony(100,40,100,30,params[0],matrix)
+    for i in seeds:
+      randomize(i)
+      colony.beeColonyOpt(matrix)
+      echo "Best Solution: ",colony.bestSolution.cost
+      for w in pairs(colony.bestSolution.workers):
+        echo w
+      colony.resetColony(matrix)

@@ -1,0 +1,10 @@
+Semillas instancia gap3.db:
+[284,376,8]
+Parámetros:
+60 abejas, 20 iteraciones
+
+
+Semillas instancia gap4.db:
+[303,79,158]
+Parámetros:
+100 abejas, 30 iteraciones

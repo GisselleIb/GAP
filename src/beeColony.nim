@@ -22,7 +22,7 @@ type
     bestSolution*:Solution
 
 
-proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:Matrix)=
+proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,db:string,m:Matrix)=
   ## Initialize the colony. Creates the hash table with the workers and
   ## creates as many bees as indicated in the argument size.
   var
@@ -38,7 +38,7 @@ proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:
   colony.max=0.0
 
   tasks=toSeq(1..numTasks)
-  workers=groupWorkers("db/gap2.db",tasks)
+  workers=groupWorkers(db,tasks)
   colony.bestSolution=initSolution(workers,numWorkers,tasks,m)
 
   for i in countup(0,size-1):
@@ -69,21 +69,28 @@ proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el méto
   return best
 
 
-proc forwardPass(colony: var BeeColony,m:Matrix)=
+proc forwardPass(colony: var BeeColony,m:Matrix,j:int)=
   ## Sends all bees to the last point where they left the construction of its
   ## solution and continues the construction by adding a task to a random worker.
   ## At the same time obtains the minimal and maximum cost in all the colony, in
   ## this phase.
+  var k:int
   colony.min=high(BiggestFloat)
   colony.max=0.0
+
   for i in countup(0,colony.numBees-1):
     colony.bees[i].solution.addTaskToWorker(m)
 
     if colony.bees[i].solution.cost < colony.min:
       colony.min = colony.bees[i].solution.cost
+      k=i
 
     if colony.bees[i].solution.cost > colony.max:
       colony.max=colony.bees[i].solution.cost
+
+
+  if j == colony.numTasks and colony.min < colony.bestSolution.cost:
+      colony.bestSolution=colony.bees[k].solution
 
 
 
@@ -124,8 +131,8 @@ proc feasible*(s:Solution):bool=
   return true
 
 proc resetColony*(colony:var BeeColony,m:Matrix)=
-  var sol=colony.bestSolution
-  colony.bestSolution=initSolution(sol.workers,sol.numWorkers,sol.tasksLeft,m)
+  ## Resets the colony for a new execution of the algorithm
+  colony.bestSolution.cost=high(BiggestFloat)
 
 
 proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
@@ -136,17 +143,9 @@ proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
   ## bees to construct their solution.
   ## After each iteration, gets the best solution of the colony and compares it
   ## with the best solution obtained in the past iterations.
-  var
-    best:Solution
-    min,max:float
-
   for i in countup(1,colony.iterations):
     for j in countup(1,colony.numTasks):
-      colony.forwardPass(m)
+      colony.forwardPass(m,j)
       colony.backwardPass()
-
-    best=colony.getBestSolution()
-    if best.cost < colony.bestSolution.cost:
-      colony.bestSolution=best
 
     colony.resetBees()

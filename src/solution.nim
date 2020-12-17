@@ -52,6 +52,7 @@ proc initSolution*(workers:Table[int,Worker],size:int,tasks:seq[int],m:Matrix,ra
     while s.tasksLeft != @[]:
       s.addTaskToWorker(m)
 
+
   return s
 
 
