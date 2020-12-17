@@ -6,6 +6,12 @@ import sequtils
 import tables
 
 type
+  ## Type that contains the definition of an artifitial bee colony. It contains
+  ## atributes to keep track the number of bees in the colony, the number of
+  ## workers in the problem, the number of tasks to be associated, the number
+  ## of iterations that the algorithm is going to be executed, an array
+  ## with the bees and the bestSolution that has been found in all the
+  ## iterations.
   BeeColony*[size:static[int]] = ref object
     numBees*:int
     numWorkers:int
@@ -17,10 +23,13 @@ type
 
 
 proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:Matrix)=
+  ## Initialize the colony. Creates the hash table with the workers and
+  ## creates as many bees as indicated in the argument size.
   var
     workers:Table[int,Worker]
     tasks:seq[int]
 
+  new(colony)
   colony.iterations=iterations
   colony.numBees=size
   colony.numWorkers=numWorkers
@@ -37,6 +46,8 @@ proc initColony*(colony:var BeeColony,size,numWorkers,numTasks,iterations:int,m:
 
 
 proc resetBees*(c:BeeColony)=
+  ## Reset each Bee so that each Bee has a solution with all the
+  ## tasks to be assign and workers without tasks.
   var
     tasks:seq[int]=toSeq(1..c.numTasks)
 
@@ -45,6 +56,7 @@ proc resetBees*(c:BeeColony)=
 
 
 proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el método principal
+  ## Returns the best solution obtained by the bees.
   var
     best:Solution
 
@@ -58,6 +70,10 @@ proc getBestSolution(colony:BeeColony):Solution= #Se puede optimizar en el méto
 
 
 proc forwardPass(colony: var BeeColony,m:Matrix)=
+  ## Sends all bees to the last point where they left the construction of its
+  ## solution and continues the construction by adding a task to a random worker.
+  ## At the same time obtains the minimal and maximum cost in all the colony, in
+  ## this phase.
   colony.min=high(BiggestFloat)
   colony.max=0.0
   for i in countup(0,colony.numBees-1):
@@ -72,6 +88,14 @@ proc forwardPass(colony: var BeeColony,m:Matrix)=
 
 
 proc backwardPass(c: var BeeColony)=
+  ## Returns all the bees to the hive so they compare each solution and based in
+  ## the cost of their solutions each bee decides if they will become a ``dancer``
+  ## a ``follower`` or a ``loner``.
+  ## After obtaining each status, puts all the indexes of the followers in a
+  ## sequence and does the same for the dancers, then for each follower choose
+  ## a random dancer and change the solution of the follower for the solution of
+  ## dancer (so that it simulates that the follower follows the path of the
+  ## dancer)
   var
     dancers:seq[int]
     followers:seq[int]
@@ -89,7 +113,10 @@ proc backwardPass(c: var BeeColony)=
     c.bees[j].solution=c.bees[id].solution
 
 
-proc factible*(s:Solution):bool=
+proc feasible*(s:Solution):bool=
+  ## Given a solution returns if it is feasible.
+  ## For a solution to be feasible it needs to have all the workers must no
+  ## have its capacity bigger than its totalCapacity .
   for w in values(s.workers):
     if w.excessCapacity():
       return false
@@ -102,6 +129,13 @@ proc resetColony*(colony:var BeeColony,m:Matrix)=
 
 
 proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
+  ## Executes the heuristic of the Bee Colony Optimization.
+  ## It runs for the number of iterations and each iterations runs for
+  ## the number of tasks to be assign (since each task is assign in each phase).
+  ## For each phase executes the forwardPass and the backwardPass for the
+  ## bees to construct their solution.
+  ## After each iteration, gets the best solution of the colony and compares it
+  ## with the best solution obtained in the past iterations.
   var
     best:Solution
     min,max:float
@@ -115,7 +149,4 @@ proc beeColonyOpt*(colony:var BeeColony,m:Matrix)=
     if best.cost < colony.bestSolution.cost:
       colony.bestSolution=best
 
-    #echo "Mejor solucion:",colony.bestSolution.cost
     colony.resetBees()
-
-  #echo colony.bestSolution.factible()

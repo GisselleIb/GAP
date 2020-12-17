@@ -3,7 +3,13 @@ import worker
 import sequtils
 import tables
 
+##Module that defines the class and procedures for a Solution in the GAP problem.
 type
+  ## Type that contains the definition of a solution. It contains a variable
+  ## ``workers`` that is a table with all the workers, a variable with the number
+  ## of workers, a variable with a sequence of ``tasksLeft`` that indicates the
+  ## tasks that have not been assign yet and a variable ``cost`` with the
+  ## the total cost of the solution.
   Solution* =object
     workers*: Table[int,Worker]
     numWorkers*:int
@@ -12,25 +18,28 @@ type
 
 
 proc addTaskToWorker*(s:var Solution,m:Matrix)=
+  ## Add the next task in the sequence to a random ``Worker`` and eliminates
+  ## the task from ``tasksLeft``
   var
     id:int=rand(1..s.numWorkers)
     t:int=s.tasksLeft[0]
     capCost=m.costs[t][id]
-  #echo "Before:"
+
   s.workers[id].addTask(capCost.capacity,t)
-  #echo "costo anterior: ", s.cost, " ",capCost.cost
-  #echo t
+
   if s.workers[id].excessCapacity():
     s.cost=s.cost+(1000*capCost.cost)
   else:
     s.cost=s.cost+capCost.cost
 
-  #echo "Costo nuevo: ", s.cost
-
   s.tasksLeft.delete(0)
 
 
 proc initSolution*(workers:Table[int,Worker],size:int,tasks:seq[int],m:Matrix,random:bool=true):Solution=
+  ## Initialize a solution given a hash table with the workers, the number of
+  ## workers and the tasks that are going to be assign to the workers.
+  ## If the random parameter is passed as true, then a random solution is
+  ## constructed.
   var
     s:Solution
 
@@ -47,51 +56,18 @@ proc initSolution*(workers:Table[int,Worker],size:int,tasks:seq[int],m:Matrix,ra
 
 
 proc resetSolution*(s:var Solution,tasks:seq[int])=
+  ## Resets a solution to a solution that does not have any task assign to
+  ## any worker, so the cost is returned to 0.
   s.tasksLeft=tasks
   s.cost=0.0
   for i in countup(1,s.numWorkers):
     s.workers[i].resetWorker()
 
 
-proc swapTask*(s:var Solution,m:Matrix)=
-  var
-    w1,w2:int=0
-    i,j,t:int
-    cap:float=0.0
-    capCost:tuple[capacity:float,cost:float]
+proc getCost*(s: Solution,m:Matrix)=
+  var cost=0.0
+  for w in pairs(s.workers):
+    for t in w[1].tasks:
+      cost=cost+m.costs[t][w[0]]
 
-  while w1 == w2 or s.workers[w1].tasks == @[]: #checar que w1 tenga tasks mejora el código esto está bien feo
-    w1=rand(1..s.numWorkers)
-    w2=rand(1..s.numWorkers)
-
-  i=rand(0..(s.workers[w1].numTasks-1))
-  t=s.workers[w1].tasks[i]
-  capCost=m.costs[t][w1]
-
-  #echo "costo antes de quitar el task:", s.cost, " ",capCost.cost
-  #echo "Capacidades: ", s.workers[w1].capacity, " ", s.workers[w1].totalCapacity
-  if s.workers[w1].excessCapacity():
-    j=0
-    for task in s.workers[w1].tasks:
-      cap=cap+m.costs[task][w1].capacity
-      #echo cap
-      j=j+1
-      if j == i:
-        break
-
-    if cap > s.workers[w1].totalCapacity:
-      s.cost=s.cost-(100*capCost.cost)
-    else:
-      s.cost=s.cost-capCost.cost
-  else:
-    s.cost=s.cost-capCost.cost
-  s.workers[w1].deleteTask(capCost.capacity,i)
-  #echo "costo despues de quitar el task:",s.cost
-
-  capCost=m.costs[t][w2]
-  s.workers[w2].addTask(capCost.capacity,t)
-  #echo s.workers[w1].tasks, s.workers[w1].numTasks
-  if s.workers[w2].excessCapacity():
-    s.cost=s.cost+(100*capCost.cost)
-  else:
-    s.cost=s.cost+capCost.cost
+  return cost
