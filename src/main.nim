@@ -1,7 +1,6 @@
 import os
 import strutils
 import sequtils
-import algorithm
 import beeColony
 import worker
 import random
@@ -11,7 +10,7 @@ import tables
 when isMainModule:
   var
     params:seq[string]=commandLineParams()
-    costs:seq[tuple[cost:float,id:int]]
+    #costs:seq[tuple[cost:float,id:int]]
     sds:seq[string]
     seeds:seq[int]
 
@@ -28,6 +27,7 @@ when isMainModule:
       randomize(i)
       colony.beeColonyOpt(matrix)
       echo "Best Solution: ",colony.bestSolution.cost
+      echo "Worst Solution: ",colony.max
       for w in pairs(colony.bestSolution.workers):
         echo w
       colony.resetColony(matrix)
@@ -41,6 +41,7 @@ when isMainModule:
       randomize(i)
       colony.beeColonyOpt(matrix)
       echo "Best Solution: ",colony.bestSolution.cost
+      echo "Worst Solution: ",colony.max
       for w in pairs(colony.bestSolution.workers):
         echo w
       colony.resetColony(matrix)

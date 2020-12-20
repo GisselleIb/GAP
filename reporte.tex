@@ -1,0 +1,479 @@
+\documentclass[12pt]{article}
+\usepackage[paper=a4paper,margin=1in]{geometry}
+\usepackage[spanish]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{enumerate}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage{mathtools}
+\usepackage{listings}
+\usepackage{tikz}
+\usepackage{float}
+\usepackage{biblatex}
+\addbibresource{ref.bib}
+
+
+\author{Ibarra Moreno Gisselle }
+\title{Problema de Asignación Generalizado (GAP)\\Heurísticas}
+\begin{document}
+	\maketitle
+	
+	\section{Introducción}
+	\subsection{Generalized Assignment Problem}
+	El problema del que se hablará en este reporte es el de \textbf{GAP}. Consiste en lo
+	siguiente:
+	
+	Dadas $n$ tareas y $m$ trabajadores o agentes, se quieren asignar todas las tareas
+	a los trabajadores. Cada trabajador tiene cierta energía o $capacidad$ que se va
+	gastando conforme se le asignan tareas, cada tarea gasta un valor de $capacidad$
+	dependiendo del trabajador al que se asigne, esto se puede ver como cuanta "dificultad" le puede costar al trabajador realizarla.
+	Además cada tarea tiene un $costo$ que depende del trabajador que la vaya realizar.
+	
+	La $capacidad$ total del trabajador, la capacidad que gasta una tarea y el $costo$ 
+	se pueden ver como las siguientes funciones:
+	\[capacidadTotal=b(w)\]
+	\[capacidad=a(t,w)\] 
+	\[costo=\sum_{t=1}^{n}\sum_{w=1}^{m}c(t,w)\times x(t,w)\]
+	Donde $w$ es un trabajador, $t$ es una tarea y $x(t,w)$ es la función que 
+	representa si la tarea $t$ está asignada al trabajador $w$, es decir:
+	\[x(t,w)=
+	\begin{cases}
+		\text{1}&\quad\text{si $w$ realiza la tarea $t$}\\
+		\text{0}&\quad\text{e.o.c}
+	\end{cases}\]
+	
+	Lo que busca optimizar el problema GAP es la función de costo.
+	Además, una solución es factible si y sólo si se cumplen las siguientes 
+	condiciones:
+	\begin{enumerate}
+		\item Toda tarea debe estar asignada a algún trabajador.
+		\[\forall t \exists w (x(t,w)=1)\]
+		\item Ninguna tarea debe estar asignada al mismo tiempo a dos o más 
+		trabajadores.
+		\[\forall t \neg \exists w_1,w_2 (x(t,w1)=1 \;\wedge \; x(t,w_2)=1)\]
+		\item Un trabajador no debe superar su $capacidadTotal$.
+		\[\forall w \left(\sum_{t=1}^{n}a(t,w)\times x(t,w) \; \leq b(j)\right)\]
+	\end{enumerate}
+
+	Para resolver este problema se decidió utilizar la heurística \textit{Colonia de 
+	Abejas, (Bee Colony Optimization)}.
+
+  	\subsection{Bee Colony Optimization}
+  	
+  	Esta heurística está basada en la inteligencia de enjambre que tienen las abejas
+  	para encontrar buenas fuentes de comida.
+  	La inteligencia enjambre se refiere al comportamiento de organismos que siguen
+  	reglas simples para interactuar con su medio y otros organismos, estas 
+  	interacciones derivan en comportamientos más complejos que pueden resolver 
+  	problemas complicados.
+  	
+  	Como se mencionó esta heurística está basada en el comportamiento de un enjambre 
+  	de abejas en la naturaleza. La búsqueda y recolección del néctar es un proceso
+  	complejo que necesita demasiada organización en las abejas. Se tienen abejas 
+  	exploradoras que salen en busca de flores de las cuales recolectar néctar, cuando
+  	alguna de estas abejas encuentra una fuente de alimento, regresa al panal para
+  	comunicarselo a las demás. La abeja procede a hacer un baile que indica
+  	la posición y distancia de la comida, al igual que la calidad. De esta forma las 
+  	otras abejas aprenden la localización aproximada del alimento y van en busca de 
+  	él. Así las abejas logran	la organización para que varios grupos de
+  	abejas recolecten el néctar de diferentes fuentes de alimento y se concentren en 
+  	las mejores.
+	
+  	La heurística toma este comportamiento de forma simplificada para resolver
+  	problemas de combinatoria. El proceso de búsqueda se compone de iteraciones, en 
+  	cada una de ellas se construyen soluciones de las cuales guardamos la mejor.
+  	Cada solución construida en la iteración $i$ es independiente de las soluciones
+  	construidas en la iteración $i-1$ o $i+1$.
+  	Todas las abejas se encuentran en el panal al inicio
+  	del proceso de búsqueda y se comunican directamente entre ellas. Durante una 
+  	iteración, cada abeja puede hacer una serie de movimientos locales, cada uno de 
+  	estos movimientos construye parte de una solución, este proceso de construcción
+  	se lleva a cabo con dos fases que definen el comportamiento de las abejas:
+  	\textit{forward pass} y \textit{backward pass}.
+  	
+  	\begin{enumerate}
+  		\item \textit{Forward pass:} En esta fase se mandan a las abejas en el último
+  		punto en que se quedó su solución parcial, a partir de ahí generan un 
+  		movimiento local que agrega una parte más a la solución.
+  		\item \textit{Backward pass:} En esta fase las abejas regresan al panal y 
+  		comparan sus soluciones entre todas, cada abeja tiene una lealtad hacia su 
+  		solución que depende de la calidad de esta. Cada abeja tiene tres opciones:
+  		\begin{itemize}
+  			\item Reclutar abejas seguidoras hacia su solución para que ellas expandan 
+  			soluciones parciales a partir de ella.
+  			\item Volver a su solución sin reclutar ninguna abeja.
+  			\item Abandonar su solución y seguir a alguna de las abejas que reclutan.
+  		\end{itemize}
+  	\end{enumerate}
+  	
+  	Estas fases se repiten hasta obtener al menos una solución factible. La 
+  	ejecución de estas dos fases se puede ver como estados, cada uno de estos
+  	estados involucra una variable a optimizar, esto se puede ver como:
+  	\[ST=\{st_1,st_2,...,st_m\}\]
+  		
+  	A continuación se puede ver el pseudocódigo para la heurística:
+  		
+  	\begin{algorithm}[H]
+  		\SetAlgoLined
+  		\KwOut{$s$ solución encontrada}
+  		\KwIn{Una colonia B de abejas, $I$ iteraciones,conjunto de estados $ST$, 
+  			$s$ una solución inicial factible}
+  		\For{i=1; i= I }{
+  		   \For{j=1; j=m}{
+  		   	$ForwardPass(B,st_j)$\\
+  	   	    $BackwardPass(B)$}
+       	   $s_i=getBestSolution(B)$\\
+              \If{$s_i < s$}{
+         	      $s=s_i$}}
+  		\Return{$s$}
+  		\caption{Bee Colony Optimization}
+  	\end{algorithm}
+  
+  	\begin{algorithm}[H]
+  		\SetAlgoLined
+  		\KwIn{Una colonia B de abejas,un estado $st$ }
+  		\ForEach{bee in B}{
+  			$bee.localSearch(st)$
+  		}
+  		\caption{ForwardPass}
+  	\end{algorithm}
+  
+  	\begin{algorithm}[H]
+  		\SetAlgoLined
+  		\KwIn{Una colonia B de abejas}
+  		$B.compareSolutions()$\\
+  		\ForEach{bee in B}{
+  			$bee.changeStatus()$ 
+  		}
+  		\caption{BackwardPass}
+  	\end{algorithm}
+  		
+  	\paragraph{}
+  	Donde $localSearch()$ es una función que expande la solución parcial de la abeja
+  	con movimientos locales, $compareSolution()$ hace la comparación de todas las 
+  	soluciones de las abejas generando la lealtad de cada abeja hacia sus soluciones
+  	y $changeStatus()$ es la decisión que toma la abeja respecto a su solución 
+  	tomando en cuenta su lealtad.
+  	
+  	
+	\section{Desarrollo}
+	
+	\subsection{Tecnologías Utilizadas:}
+	
+	El lenguaje de programación utilizado para la implementación del algoritmo, es Nim.
+	Es un lenguaje completamente compilado, multiparadigma con tipado estático. 
+	
+	El compilador genera código optimizado en C y también puede generar código en C++ y
+	JavaScript.
+	El compilador además tiene un recolector de basura y el programador no tiene porque
+	manejar la memoria de forma manual y directa.
+	
+	La sintáxis de Nim es muy parecida a la de Python lo que la hace muy sencilla de
+	comprender y leer. Además traducir pseudocódigo a código en Nim, es igualmente
+	sencillo y rápido.
+	
+	\subsection{Implementación de la Heurística:}
+	
+	Se implementó la heurística de la Colonia de Abejas adapatada para resolver el
+	problema \textbf{GAP}. La heurística fue implementada utilizando el paradigma de
+	Orientación a Objetos.
+	
+	En esta implementación las abejas construyen las soluciones desde 0 hasta llegar
+	a una solución factible en una iteración.La forma en que construyen las soluciones
+	las abejas es agregando una tarea a un trabajador de forma aleatoria hasta que no
+	queden tareas sin asignar.
+	
+	Una parte primordial del problema es la capacidad que gasta cada trabajador con una
+	tarea y el costo ya que es lo que queremos optimizar, estos valores se necesitarán
+	constantemente a lo largo de toda la heurística.
+	Las funciones $a(t,w), c(t,w)$ para la capacidad y el costo respectivamente se 
+	pueden traducir como una sola matrix de $n \times m$ que almacenará una tupla con
+	la capacidad y el costo de la tarea $i$ con el trabajador $j$, esto nos facilitará
+	la obtención de cualquiera de estos valores cada que se necesiten en tiempo 
+	constante.
+	
+	
+	\paragraph{Trabajadores}
+	
+	Los trabajadores son un factor muy importante, ya que ellos tienen
+	características importantes como la $capacidadTotal$ que pueden aguantar y 
+	se necesita saber las tareas que tiene asignado cada trabajador, 
+	mientras que las tareas no tienen realmente características y los valores 
+	importantes relacionadas a ellas están almacenadas en nuestra matriz, por lo que 
+	podemos	representar cada una de estas tareas con números enteros positivos.
+	Por eso mismo se diseñó un objeto $Worker$ para representar a los trabajadores con
+	los siguientes atributos y funciones para modelar su comportamiento:
+	\begin{enumerate}
+		\item \textbf{Atributos:}
+		\begin{itemize}
+			\item $totalCapacity$: La capacidad total que puede soportar el trabajador
+			\item $capacity$: La capacidad que lleva gastada el trabajador
+			\item $tasks$: Una lista de enteros que almacenará las tareas asignadas al 
+			trabajador.
+		\end{itemize}
+		\item \textbf{Funciones:}
+		\begin{itemize}
+			\item $addTask$: Agrega una tarea a la lista $tasks$ y suma a $capacity$
+			la cantidad de capacidad que gasta la nueva tarea asignada.
+			\item $excessCapacity$: Indica si la capacidad gastada ha sobrepasado 
+			a la capacidad total del trabajador $capacity > totalCapacity$
+		\end{itemize}
+	\end{enumerate}
+
+	Con la clase para modelar a los trabajadores y una forma sencilla de 
+	representar a las tareas, se modela la representación de las soluciones.
+	
+	\paragraph{Soluciones} Las soluciones son objetos que necesitan llevar de alguna
+	forma registro de todos los trabajadores con las tareas que llevan asignadas hasta
+	el momento, también necesita saber la cantidad de tareas que están sin asignar y
+	lo más importante, necesitan llevar registro del costo.
+	Sus atributos y funciones más importantes son:
+	
+	\begin{enumerate}
+		\item \textbf{Atributos:}
+		\begin{itemize}
+			\item $workers$: Un diccionario que almacena todos los trabajadores y como 
+			llave utiliza el identificador del trabajador y como valor un objeto 
+			$Worker$.
+			\item $tasksLeft$: Una lista de enteros que representan las tareas que 
+			aún no han sido asignadas a ningún trabajador.
+			\item $cost$: El valor de la suma de los costos de cada tarea que ha sido 
+			asignada a algún trabajador.
+		\end{itemize}
+		\item \textbf{Funciones:}
+		\begin{itemize}
+			\item $addTaskToWorker$: Escoge un trabajador de forma aleatoria y le 
+			asigna la siguiente tarea, además suma el costo de que ese trabajador 
+			realice esa tarea al costo de la solución, pero si la capacidad total del
+			trabajador ya fue excedida entonces suma el costo multiplicado por mil, de
+			esta forma penalizamos cualquier solución parcial que ya no es factible.
+		\end{itemize}
+	\end{enumerate}
+	
+	Teniendo nuestra clase para las soluciones podemos empezar a ver el diseño que 
+	corresponde a la Colonia de Abejas.
+	
+	\paragraph{Abejas}
+	Como se dijo anteriormente, las abejas construyen las soluciones desde 0 agregando
+	una tarea cada vez, además, con el $backwardpass$ las abejas pueden cambiar el 
+	su estatus y su solución por alguna mejor en algún momento de la iteración.
+	Podemos ver los atributos y funciones principales de la abeja a continuación:
+	
+	\begin{enumerate}
+		\item \textbf{Atributos:}
+		\begin{itemize}
+			\item solution: La solución actual de la abeja.
+			\item status: El estatus de la abeja, puede ser $follower$(seguidora), 
+			$loner$ (solitaria) y $dancer$(bailarina). Este estatus determina 
+			el comportamiento de la abeja.
+		\end{itemize}
+		\item \textbf{Funciones:}
+		\begin{itemize}
+			\item $loyalty$: Calcula la lealtad que tiene la abeja hacia su solución
+			actual, esta se calcula como:
+			\[\frac{S-S_{min}}{S_{max}-S_{min}}\]
+			Donde $S$ es el costo de la solución de la abeja, $S_{min}$ es la solución
+			con el costo más pequeño de toda la colonia y $S_{max}$ es la solución con
+			el peor costo. Esta fórmula coloca el valor del costo en un rango entre 0 
+			y 1 lo que facilita determinar que tan buena o mala es una solución.
+			\item $changeStatus$: Determina el nuevo estatus de la abeja, esto lo 
+			hace con ayuda de la lealtad que tenga la abeja hacia su solución. La forma
+			en que lo determina es elitista, cualquier abeja con lealtad menor 0.05 
+			se convertirá en una abeja bailarina que reclute, las abejas con lealtad
+			mayor a 0.05 pero menor 0.2 serán las abejas solitarias que continuarán
+			expandiendo su solución por su cuenta, las abejas con lealtad mayor o 
+			igual a 0.2	serán abejas seguidoras.
+		\end{itemize}
+	\end{enumerate}
+
+	\paragraph{Colonia de Abejas}
+	La colonia de abejas tendrá como atributo una estructura con $k$ número de abejas, 
+	el número de iteraciones que se ejecutará la heurística y la mejor solución 
+	encontrada de todas las iteraciones ejecutadas. Además en esta clase es donde
+	viene implementado el funcionamiento principale de la heurística como son las fases
+	$forwardpass$ y $backwardpass$.
+	Los atributos de la abeja y las funciones se muestran a continuación:
+	
+	\begin{enumerate}
+		\item \textbf{Atributos:}
+		\begin{itemize}
+			\item $bees$:Un arreglo de tamaño $k$ con todas las abejas de la colonia.
+			\item $iterations$: El total de iteraciones que se ejecutará la heurística.
+			\item $bestSolution$: La mejor solución encontrada hasta la iteración $i$.
+		\end{itemize}
+		\item \textbf{Funciones:}
+		\begin{itemize}
+			\item $forwardpass$: Estando en el estado $j$, para cada abeja en $bees$ 
+			manda llamar la función $addTaskToWorker$ de la solución asociada a la 
+			abeja.
+			\item $backwardpass$: Para cada abeja en $bees$ elige su estatus con 
+			$changeStatus$, luego para cada abeja con estatus $follower$ elige de 
+			forma aleatoria una de las abejas con estatus $dancer$.
+			\item $beeColonyOpt$: Ejecuta la heurística tal como se vió en el 
+			pseudocódigo en la introducción.  
+		\end{itemize}
+	\end{enumerate}
+
+	http://graphonline.ru/en/?graph=mlwaCuHVLgyaUFrA
+	
+	\section{Resultados}
+	
+	Se probó la heurística con dos instancias de bases de datos distintas, se hicieron
+	varias pruebas con 300 semillas para las dos instancias cambiando los valores en 
+	el elitismo al cambiar el estatus de cada abeja.
+	
+	\begin{enumerate}
+		\item Lealtad 1:
+		\[loyalty < 0.05 = dancer,  0.05 < loyalty < 0.2 = loner,0.2<loyalty=follower\]
+		\item Lealtad 2:
+		\[loyalty < 0.02 = dancer,  0.02 < loyalty < 0.2 = loner,0.2<loyalty=follower\]
+	\end{enumerate}
+	
+	La siguientes tablan los diferentes valores con los que se eligieron los estatus
+	de las abejas:
+	
+	
+	\begin{table}[H]
+		\centering
+		\caption{Lealtad 1}
+		\begin{tabular}{|p{0.13\textwidth}|p{0.12\textwidth}|p{0.13\textwidth}|p{0.14\textwidth}|p{0.17\textwidth}|p{0.17\textwidth}|}
+			\hline 
+			Instancia de BD & Semilla & Número de Abejas & Iteraciones & Mejor solución  & Peor solución \\
+			\hline 
+			gap3.db & 284 & 60 & 20 & 3957.68204 & 229163.8117 \\
+			\hline 
+			gap3.db & 376 & 60 & 20 & 4082.93975 & 219452.8191 \\
+			\hline 
+			gap3.db & 8 & 60 & 20 & 4109.79893 & 217727.8319 \\
+			\hline 
+			gap4.db & 303 & 100 & 30 & 8651.52446 & 209384.7634 \\
+			\hline 
+			gap4.db & 79 & 100 & 30 & 8747.21108 & 248956.0246 \\
+			\hline 
+			gap4.db & 158 & 100 & 30 & 8812.41736 & 213476.8721 \\
+			\hline
+		\end{tabular}
+		
+	\end{table}
+
+	
+	\begin{table}[H]
+		\centering
+		\caption{Lealtad 2}
+		\begin{tabular}{|p{0.13\textwidth}|p{0.12\textwidth}|p{0.13\textwidth}|p{0.14\textwidth}|p{0.17\textwidth}|p{0.17\textwidth}|}
+			\hline 
+			Instancia de BD & Semilla & Número de Abejas & Iteraciones & Mejor solución  & Peor solución \\
+			\hline 
+			gap3.db & 20 & 60 & 20 & 3935.82122 & 220149.7641 \\
+			\hline 
+			gap3.db & 228 & 60 & 20 & 4000.05095 & 219036.0994 \\
+			\hline 
+			gap3.db & 280 & 60 & 20 & 4030.89876 & 217541.7850 \\
+			\hline 
+			gap4.db & 209 & 100 & 30 & 8158.21757 & 205790.7171 \\
+			\hline 
+			gap4.db & 59 & 100 & 30 & 8258.10292 & 204717.3900 \\
+			\hline 
+			gap4.db & 221 & 100 & 30 & 8263.36881 & 202263.8813 \\
+			\hline
+		\end{tabular}
+		
+	\end{table}
+
+	Se muestra a continuación la mejor configuración del problema para la base de datos
+	gap3.db:
+	
+	\begin{lstlisting}
+seed: 284
+cost: 3957.682043498803
+
+W1: T4,T9
+W2: T14,T20
+W3: T17,T30
+W4: T39,T40
+W5: T3,T16
+W6: T36
+W7: T47,T48
+W8: T15,T33
+W9: T13,T42
+W10: T25,T41,T49,T50
+W11: T5,T27
+W12: T2,T9,T11,T45
+W13: T32,T35
+W14: T7,T21,T22,T43
+W15: T6,T8,T10,T24
+W16: T12,T28,T29
+W17: T18,T34
+W18: T5,T38
+W19: T1,T23,T26,T37
+W20: T31,T44,T46
+	\end{lstlisting}
+
+	La mejor configuración del problema para la base de datos gap4.db:
+
+	\begin{lstlisting}
+seed: 209
+cost: 8158.217579479722
+
+W1: T14,T15,T41,T49
+W2: T12,T22,T40
+W3: T32,T36,T48
+W4: T6
+W5: T87
+W6: T9,T11.T35,T60,T80,T81,T94
+W7: T8,T23
+W8: T25,T29,T70,T72
+W9: 
+W10: T37
+W11: T31,T82,T93,T95
+W12: T24,T75,T78
+W13: T88
+W14: T7,T44
+W15: T28
+W16: T10,T50,T53
+W17: T56,T68
+W18: T1,T65,T90
+W19: T34,T47,T62,T63
+W20: T57,T61,T69,T71,T74
+W21: T16,T54,T86
+W22: T13,T64,T73,T99
+W23: T17
+W24: T52,T55
+W25: T2
+W26: T67,T83,T84
+W27: T46
+W28: T33,T85,T89,T97
+W29: T3,T5,T18,T42,T51
+W30: T20,T76
+W31: T58
+W32: T38,T66
+W33: T21,T27,T92,T98
+W34: T4,T45,T77
+W35: T30
+W36: 
+W37: T43
+W38: T19,T49
+W39: T39,T79,T96,T100
+W40: T26,T91
+	\end{lstlisting}
+	\section{Conclusión}
+	Se lograron encontrar soluciones factibles, aunque los valores obtenidos no se 
+	acercan a los valores óptimos.
+	Debido a que las soluciones se construyen agregando tarea por tarea, no hay 
+	posibilidad de mover alguna tarea hacia otro trabajador y que mejore todavía 
+	más la solución. Como las abejas actuan de forma elitista, las mejores 
+	soluciones se van construyendo por las abejas que no han sobrepasado la capacidad
+	de algún trabajador, mientras que las que sobrepasan la capacidad de alguno
+	es descartada automáticamente. Esto puede ser malo ya que no se le está dando
+	suficiente oportunidad de empeorar a la solución. 
+	
+	\section{Referencias:}
+	\begin{itemize}
+		\item \textit{D. Teodorovic, P. Lucic, G. Markovic and M. D. Orco, "Bee Colony Optimization: Principles and Applications," 2006 8th Seminar on Neural Network Applications in Electrical Engineering, Belgrade, Serbia \& Montenegro, 2006, pp. 151-156, doi: 10.1109/NEUREL.2006.341200.}
+		
+		\item \textit{O Erhun Kundakcioglu and Saed Alizamir. Generalized assignment problem.,
+			2009.}
+		\item \textit{nim-lang.org}
+	\end{itemize}
+	
+	
+\end{document}

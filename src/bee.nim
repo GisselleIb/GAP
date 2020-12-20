@@ -51,7 +51,7 @@ proc changeStatus*(b:var Bee,min,max:float)=
 
   if loyalty > 0.2:
     b.status=follower
-  elif loyalty > 0.05 :
+  elif loyalty > 0.02 :
     b.status=loner
   else:
     b.status=dancer

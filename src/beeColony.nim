@@ -18,7 +18,8 @@ type
     numTasks:int
     iterations*:int
     bees*:array[size,Bee]
-    min,max:float
+    min*:float
+    max*:float
     bestSolution*:Solution
 
 

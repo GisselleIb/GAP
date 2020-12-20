@@ -32,6 +32,7 @@ proc addTaskToWorker*(s:var Solution,m:Matrix)=
   else:
     s.cost=s.cost+capCost.cost
 
+
   s.tasksLeft.delete(0)
 
 
